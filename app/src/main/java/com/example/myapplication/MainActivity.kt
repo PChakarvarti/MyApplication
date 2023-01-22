@@ -7,7 +7,9 @@ import com.sun.tools.javac.main.JavaCompiler
 import com.sun.tools.javac.tree.JCTree
 import com.sun.tools.javac.util.Context
 import com.sun.tools.javac.util.List
+import com.sun.tools.javac.util.Options
 import java.io.File
+import java.io.PrintWriter
 import javax.tools.JavaFileObject
 
 class MainActivity : AppCompatActivity() {
@@ -31,5 +33,20 @@ class MainActivity : AppCompatActivity() {
         if (expected != commentText) {
             throw AssertionError("Incorrect comment text: [$commentText], expected [$expected]")
         }
+    }
+
+    @Throws(Throwable::class)
+    fun test(fm: JavacFileManager, f: JavaFileObject, vararg args: String?) {
+        val context = Context()
+        fm.setContext(context)
+        val compilerMain = Main("javac", PrintWriter(System.err, true))
+        compilerMain.setOptions(Options.instance(context))
+        compilerMain.filenames = LinkedHashSet<File>()
+        compilerMain.processArgs(args)
+        val c = JavaCompiler.instance(context)
+        c.compile(List.of(f))
+        if (c.errorCount() != 0) throw java.lang.AssertionError("compilation failed")
+        val msec = c.elapsed_msec
+        if (msec < 0 || msec > 5 * 60 * 1000) throw java.lang.AssertionError("elapsed time is suspect: $msec")
     }
 }
